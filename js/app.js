@@ -1,3 +1,19 @@
+const API_BASE_URL = 'http://localhost:5171/api'; // Thay 5171 bằng số cổng thực tế khi bạn chạy lệnh dotnet run
+        async function loadBooksFromDatabase() {
+            try {
+                let response = await fetch(`${API_BASE_URL}/Sach`);
+                if (response.ok) {
+                    let dbBooks = await response.json();
+                    books = dbBooks; // Đồng bộ mảng books với Database trên SQL Server
+                    renderCatalog();
+                    if (currentUser && currentUser.role === 'admin') {
+                        renderAdmin();
+                    }
+                }
+            } catch (error) {
+                console.error('Không thể kết nối tới Backend API:', error);
+            }
+        }
 // ===== 1. DỮ LIỆU & BIẾN TOÀN CỤC =====
 const CAT_NAMES = {
     'van-hoc': 'Văn Học',
@@ -428,7 +444,7 @@ function processCheckout() {
             <div style="text-align:center; padding:10px;">
                 <h3 style="color:#dc2626;">🚫 TÀI KHOẢN BỊ KHÓA ĐẶT HÀNG</h3>
                 <p style="margin:12px 0; font-size:14px; line-height:1.5;">
-                    Hệ thống nhận định tài khoản của bạn đang có số nợ là <b style="color:#dc2626;">${formatMoney(customerDebt)}</b>, vượt quá mức quy định cho phép (<b>20.000 đ</b>) theo QĐ2[cite: 11].
+                    Hệ thống nhận định tài khoản của bạn đang có số nợ là <b style="color:#dc2626;">${formatMoney(customerDebt)}</b>, vượt quá mức quy định cho phép (<b>20.000 đ</b>) theo QĐ2.
                 </p>
                 <div style="background:#fef3c7; border-left:4px solid #f59e0b; padding:10px; text-align:left; font-size:13px; color:#92400e; margin-bottom:14px;">
                     📌 <b>Hướng dẫn thắc mắc & Xử lý:</b> Vui lòng liên hệ Quản trị viên (Admin) qua Hotline <b>1900 xxxx</b> để kiểm tra và nộp tiền thanh toán nợ.
@@ -444,7 +460,7 @@ function processCheckout() {
         if (b.stock < cart[i].qty) { alert('"' + b.title + '" không còn đủ hàng!'); return; }
         
         if ((b.stock - cart[i].qty) < 20) {
-            alert('Vi phạm quy định QĐ2: Đầu sách "' + b.title + '" sau khi bán phải giữ lại tồn kho ít nhất là 20 cuốn (Hiện kho chỉ còn ' + b.stock + ')[cite: 11]!');
+            alert('Vi phạm quy định QĐ2: Đầu sách "' + b.title + '" sau khi bán phải giữ lại tồn kho ít nhất là 20 cuốn (Hiện kho chỉ còn ' + b.stock + ')!');
             return;
         }
     }
@@ -475,7 +491,7 @@ function processCheckout() {
 
 function showInvoice(orderId) {
     var o = orders.find(function (x) { return x.orderId === orderId; });
-    var html = '<div class="center"><h3>THBOOK STORE</h3><p class="mu">HÓA ĐƠN XÁC NHẬN ĐƠN HÀNG (BM2)[cite: 11]</p><b>#' + o.orderId + '</b></div>' +
+    var html = '<div class="center"><h3>THBOOK STORE</h3><p class="mu">HÓA ĐƠN XÁC NHẬN ĐƠN HÀNG (BM2)</p><b>#' + o.orderId + '</b></div>' +
         '<p style="margin:10px 0"><b>Khách hàng:</b> ' + esc(o.name) + '<br><b>SĐT:</b> ' + esc(o.phone) +
         '<br><b>Địa chỉ:</b> ' + esc(o.address) + '<br><b>Ngày đặt:</b> ' + o.date + ' · <span class="tag">' + o.status + '</span></p>';
     o.items.forEach(function (i) {
@@ -665,14 +681,14 @@ function renderAdmin() {
 function openImportModal() {
     let eligibleBooks = books.filter(b => b.stock < 300);
     if (eligibleBooks.length === 0) {
-        alert('Không có đầu sách nào đủ điều kiện tồn kho < 300 để lập phiếu nhập[cite: 11]!');
+        alert('Không có đầu sách nào đủ điều kiện tồn kho < 300 để lập phiếu nhập!');
         return;
     }
     let options = eligibleBooks.map(b => `<option value="${b.id}">${b.title} (Tồn hiện tại: ${b.stock})</option>`).join('');
     
     openModal(`
-        <h3>📦 Lập Phiếu Nhập Sách (BM1)[cite: 11]</h3>
-        <p class="mu" style="margin: 8px 0;">QĐ1: Số lượng nhập ít nhất là 150. Chỉ nhập đầu sách tồn kho < 300[cite: 11].</p>
+        <h3>📦 Lập Phiếu Nhập Sách (BM1)</h3>
+        <p class="mu" style="margin: 8px 0;">QĐ1: Số lượng nhập ít nhất là 150. Chỉ nhập đầu sách tồn kho < 300.</p>
         <form onsubmit="event.preventDefault(); processImportBook()">
             <label>Ngày nhập<input type="date" id="impDate" required value="${new Date().toISOString().split('T')[0]}"></label>
             <label>Chọn đầu sách<select id="impBookId">${options}</select></label>
@@ -687,9 +703,9 @@ function processImportBook() {
     let qty = parseInt($('impQty').value);
     let importDate = $('impDate').value;
     
-    if (qty < 150) { alert('Quy định QĐ1: Số lượng nhập ít nhất phải là 150[cite: 11]!'); return; }
+    if (qty < 150) { alert('Quy định QĐ1: Số lượng nhập ít nhất phải là 150!'); return; }
     let book = findBook(bookId);
-    if (book.stock >= 300) { alert('Quy định QĐ1: Chỉ được nhập đầu sách tồn kho ít hơn 300[cite: 11]!'); return; }
+    if (book.stock >= 300) { alert('Quy định QĐ1: Chỉ được nhập đầu sách tồn kho ít hơn 300!'); return; }
     
     book.stock += qty;
     let slip = {
@@ -706,7 +722,7 @@ function processImportBook() {
     closeModal();
     renderAdmin();
     renderCatalog();
-    showToast('Lập phiếu nhập sách (BM1) thành công[cite: 11]!');
+    showToast('Lập phiếu nhập sách (BM1) thành công!');
 }
 
 function renderImportSlipsTable() {
@@ -728,8 +744,8 @@ function openReceiptModal() {
     let custOptions = users.filter(u => u.role !== 'admin').map(u => `<option value="${u.id}">${u.name} (SĐT: ${u.phone}) - Nợ hiện tại: ${formatMoney(u.debt || 0)}</option>`).join('');
 
     openModal(`
-        <h3>💵 Lập Phiếu Thu Tiền (BM4)[cite: 11]</h3>
-        <p class="mu" style="margin: 8px 0;">QĐ4: Chọn khách hàng để lập phiếu thu tiền và tự động giảm trừ số nợ hệ thống[cite: 11].</p>
+        <h3>💵 Lập Phiếu Thu Tiền (BM4)</h3>
+        <p class="mu" style="margin: 8px 0;">QĐ4: Chọn khách hàng để lập phiếu thu tiền và tự động giảm trừ số nợ hệ thống.</p>
         <form onsubmit="event.preventDefault(); processReceiptCreate()">
             <label>Chọn Khách Hàng *<select id="rcUserId" onchange="autoFillCustomerInfo()">${custOptions}</select></label>
             <label>Họ tên khách hàng<input type="text" id="rcName" required></label>
@@ -775,7 +791,7 @@ function processReceiptCreate() {
     saveState();
     closeModal();
     renderAdmin();
-    showToast('Lập phiếu thu tiền (BM4) thành công & Đã giảm nợ[cite: 11]!');
+    showToast('Lập phiếu thu tiền (BM4) thành công & Đã giảm nợ!');
 }
 
 function renderReceiptsTable() {
@@ -935,15 +951,14 @@ async function processCheckoutAPI() {
     };
 
     try {
-        // Gửi request đến Controller DonHang/dat-hang
-        let response = await fetch('https://localhost:7001/api/DonHang/dat-hang', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('THBook_token')}`
-            },
-            body: JSON.stringify(payload)
-        });
+        // Gửi request đến Controller DonHang/dat-hang với đúng cổng 7193
+        let response = await fetch('https://localhost:7193/api/DonHang/dat-hang', {   
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+});
 
         let result = await response.json();
 
@@ -966,3 +981,10 @@ async function processCheckoutAPI() {
         alert('Không thể kết nối tới máy chủ cơ sở dữ liệu!');
     }
 }
+document.addEventListener('DOMContentLoaded', function () {
+    initTheme();
+    renderNav();
+    saveState();
+    switchView('store');
+    loadBooksFromDatabase(); // Kéo dữ liệu từ SQL Server lên Web
+});
