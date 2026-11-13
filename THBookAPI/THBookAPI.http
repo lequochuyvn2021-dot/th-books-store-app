@@ -1,0 +1,11 @@
+@THBookAPI_HostAddress = http://localhost:5171
+
+GET {{THBookAPI_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
+GET {{THBookAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
